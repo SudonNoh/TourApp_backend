@@ -1,4 +1,8 @@
+import jwt
+from datetime import datetime, timedelta
+
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 
 from core.models import TimestampedModel
@@ -29,3 +33,17 @@ class User(AbstractBaseUser, TimestampedModel, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+    
+    @property
+    def token(self):
+        return self._generate_jwt_token()
+    
+    def _generate_jwt_token(self) -> str:
+        dt = datetime.now() + timedelta(days=1)
+        
+        token = jwt.encode({
+            'id':self.pk,
+            'exp':dt.utcfromtimestamp(dt.timestamp())
+        }, settings.SECRET_KEY, algorithm='HS256')
+        
+        return token

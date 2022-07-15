@@ -49,9 +49,6 @@ INSTALLED_APPS = [
 
     # Django Rest Framework
     'rest_framework',
-    
-    # JWT
-    'rest_framework_simplejwt',
 
     # Extra API
     'django_extensions',
@@ -148,7 +145,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # django rest framework setting
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'authentication.backends.JWTAuthentication',
     ),
 
     'DEFAULT_PERMISSION_CLASSES': (
@@ -160,11 +157,3 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'authentication.User'
-
-# simple jwt setting
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ALGORITHM':'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-}
