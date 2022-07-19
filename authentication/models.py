@@ -12,7 +12,6 @@ from .managers import UserManager
 # Create your models here.
 class User(AbstractBaseUser, TimestampedModel, PermissionsMixin):
 
-    username = models.CharField(db_index=True, max_length=20, unique=True)
     email = models.EmailField(db_index=True, unique=True)
     mobile = models.CharField(max_length=15, unique=True)
     birth = models.DateField(blank=True)
@@ -24,7 +23,6 @@ class User(AbstractBaseUser, TimestampedModel, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = [
-        'username',
         'mobile',
         'type'
     ]

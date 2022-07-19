@@ -55,6 +55,7 @@ INSTALLED_APPS = [
 
     # App
     'authentication',
+    'profiles',
 ]
 
 MIDDLEWARE = [
@@ -129,8 +130,8 @@ USE_I18N = True
 # localization
 USE_L10N = True
 # django's time zone
-USE_TZ = True
-
+# model에서 utc time zone 사용하지 않기 위해 false 설정
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
