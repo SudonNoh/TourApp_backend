@@ -1,10 +1,9 @@
-from unittest.util import _MAX_LENGTH
-from wsgiref import validate
 from django.contrib.auth import authenticate
 from django.utils import timezone
 
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from users.models import User
 
@@ -96,6 +95,21 @@ class SignInSerialzier(serializers.Serializer):
         user.last_login = timezone.now()
         user.save(update_fields=['last_login'],)
         
+        try:
+            # login 할 때 refresh token이 발행된다. 이때 여러 개의 refresh token이 계속해서 발행되면
+            # 보안상 문제가 될 것으로 생각 된다. 따라서 새롭게 login 할 때마다 refresh 토큰을 blacklist에
+            # 추가해준다.
+            
+            # 아래 latest 옵션으로 가장 최근에 만든 refresh token을 blacklist로 옮긴다.
+            token = OutstandingToken.objects.filter(user_id=user.id).latest('created_at')
+            
+            # token 객체의 token 값을 blacklist로 추가
+            pre_refresh_token = RefreshToken(token.token)
+            pre_refresh_token.blacklist()
+        except OutstandingToken.DoesNotExist:
+            # 처음 로그인을 시도하는 사용자의 경우 blacklist에 추가할 필요가 없기 때문에 pass
+            pass
+            
         setattr(user, 'token', get_tokens_for_user(user))
         
         return {
@@ -128,5 +142,4 @@ class UserSerializer(serializers.ModelSerializer):
             setattr(instance, key, value)
         
         instance.save()
-        
         return instance
