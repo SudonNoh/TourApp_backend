@@ -1,12 +1,14 @@
-from functools import partial
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.generics import RetrieveUpdateAPIView
 
+from rest_framework_simplejwt.views import TokenRefreshView
 
-from .serializers import SignInSerialzier, SignUpSerializer, UserSerializer
+from .serializers import (
+    SignInSerialzier, SignUpSerializer, UserSerializer, CustomRefreshTokenSerializer
+    )
 
 
 class SignUpAPIView(APIView):
@@ -51,3 +53,7 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         serializer.save()
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CustomRefreshTokenView(TokenRefreshView):
+    serializer_class = CustomRefreshTokenSerializer

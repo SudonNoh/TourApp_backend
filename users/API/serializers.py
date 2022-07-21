@@ -2,8 +2,11 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 
 from rest_framework import serializers
+
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from users.models import User
 
@@ -44,6 +47,9 @@ class SignUpSerializer(serializers.ModelSerializer):
 
         setattr(user, "token", get_tokens_for_user(user))
         setattr(user, "message", "Success SignUp")
+        
+        user.last_login = timezone.localtime()
+        user.save(update_fields=['last_login'],)
 
         return user
     
@@ -92,22 +98,20 @@ class SignInSerialzier(serializers.Serializer):
                 'This user has been deactivated.'
             )
             
-        user.last_login = timezone.now()
+        user.last_login = timezone.localtime()
         user.save(update_fields=['last_login'],)
         
+        # refresh token을 하나의 기기에서만 유효하도록 하기 위한 설정이다.
         try:
-            # login 할 때 refresh token이 발행된다. 이때 여러 개의 refresh token이 계속해서 발행되면
-            # 보안상 문제가 될 것으로 생각 된다. 따라서 새롭게 login 할 때마다 refresh 토큰을 blacklist에
-            # 추가해준다.
-            
-            # 아래 latest 옵션으로 가장 최근에 만든 refresh token을 blacklist로 옮긴다.
             token = OutstandingToken.objects.filter(user_id=user.id).latest('created_at')
-            
-            # token 객체의 token 값을 blacklist로 추가
-            pre_refresh_token = RefreshToken(token.token)
-            pre_refresh_token.blacklist()
+            # Signin 할 때 기존에 있던 refresh token이 expired date이 지나지 않은 경우에는 token을
+            # blacklist에 추가해준다.
+            if token.expires_at > timezone.now():
+                pre_refresh_token = RefreshToken(token.token)
+                pre_refresh_token.blacklist()
+            # 만약 expired date이 지난 경우에는 바로 refresh token을 보내준다.
         except OutstandingToken.DoesNotExist:
-            # 처음 로그인을 시도하는 사용자의 경우 blacklist에 추가할 필요가 없기 때문에 pass
+            # 처음 로그인 시도
             pass
             
         setattr(user, 'token', get_tokens_for_user(user))
@@ -143,3 +147,41 @@ class UserSerializer(serializers.ModelSerializer):
         
         instance.save()
         return instance
+
+
+class CustomRefreshTokenSerializer(TokenRefreshSerializer):
+
+    def validate(self, attrs):
+        
+        # refresh token 으로 user의 정보를 불러온다.
+        pre_refresh_token = attrs.get("refresh", None)
+        if pre_refresh_token is None:
+            raise serializers.ValidationError(
+                "It's not include refresh token."
+            )
+            
+        refresh_token_obj = RefreshToken(pre_refresh_token)
+        user_id = refresh_token_obj.get('user_id', None)
+        
+        if user_id is None:
+            raise serializers.ValidationError(
+                "A user with this token was not found."
+            )
+        
+        user = User.objects.get(id=user_id)
+
+        # 기존에 받은 refresh token을 blacklist에 저장한다.
+        refresh = self.token_class(attrs["refresh"])
+
+        if api_settings.ROTATE_REFRESH_TOKENS:
+            if api_settings.BLACKLIST_AFTER_ROTATION:
+                try:
+                    # Attempt to blacklist the given refresh token
+                    refresh.blacklist()
+                except AttributeError:
+                    # If blacklist app not installed, `blacklist` method will
+                    # not be present
+                    pass
+        
+        # 그리고 refresh token과 access token을 재발행한다.
+        return get_tokens_for_user(user)

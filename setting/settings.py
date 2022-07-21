@@ -120,7 +120,7 @@ USE_I18N = True
 USE_L10N = True
 # django's time zone
 # model에서 utc time zone 사용하지 않기 위해 false 설정
-USE_TZ = False
+USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -141,8 +141,8 @@ REST_FRAMEWORK = {
 
 # JWT setting
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
     'UPDATE_LAST_LOGIN': True,
 
     'ALGORITHM': 'HS256',
