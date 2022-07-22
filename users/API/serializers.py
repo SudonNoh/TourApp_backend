@@ -7,8 +7,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from profiles.models import Profile
 
 from users.models import User
+from profiles.API.serializers import ProfileSerializer
 
 
 def get_tokens_for_user(user):
@@ -128,24 +130,44 @@ class UserSerializer(serializers.ModelSerializer):
     
     email = serializers.EmailField(read_only=True)
     last_login = serializers.DateTimeField(read_only=True)
-    mobile = serializers.CharField(
-        max_length = 11
-    )
+    mobile = serializers.CharField(max_length = 11)
+    
+    # Profile 관련
+    profile = ProfileSerializer()
+    # username = serializers.CharField(source='profile.username')
+    # birth = serializers.DateField(source='profile.birth')
+    # profile_img = serializers.ImageField(source='profile.profile_img', use_url=True)
+    # introduce = serializers.CharField(source='profile.introduce')
     
     class Meta:
         model = User
         fields = [
             'email',
             'mobile',
-            'last_login'
+            'last_login',
+            # profile
+            'profile'
+            # 'username',
+            # 'birth',
+            # 'profile_img',
+            # 'introduce'
         ]
         
     def update(self, instance, validated_data):
+        
+        profile_data = validated_data.pop('profile', {})
         
         for (key, value) in validated_data.items():
             setattr(instance, key, value)
         
         instance.save()
+        
+        for (key, value) in profile_data.items():
+            print(key, value)
+            setattr(instance.profile, key, value)
+            
+        instance.profile.save()
+        
         return instance
 
 
@@ -167,8 +189,14 @@ class CustomRefreshTokenSerializer(TokenRefreshSerializer):
             raise serializers.ValidationError(
                 "A user with this token was not found."
             )
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "User is not matched with ID"
+            )
         
-        user = User.objects.get(id=user_id)
 
         # 기존에 받은 refresh token을 blacklist에 저장한다.
         refresh = self.token_class(attrs["refresh"])

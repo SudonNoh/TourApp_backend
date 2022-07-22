@@ -8,7 +8,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .serializers import (
     SignInSerialzier, SignUpSerializer, UserSerializer, CustomRefreshTokenSerializer
-    )
+)
 
 
 class SignUpAPIView(APIView):
@@ -32,26 +32,42 @@ class SignInAPIView(APIView):
         user = request.data
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-        
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
-    
+
     def get(self, request, *args, **kwargs):
         serializer = self.serializer_class(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def patch(self, request, *args, **kwargs):
-        serializer_data = request.data
+        user_data = request.data
+        profile_data = request.data.get('profile', {})
+
+        serializer_data = {
+            'email': user_data.get('email', request.user.email),
+            'mobile': user_data.get('mobile', request.user.mobile),
+
+            'profile': {
+                'username': profile_data.get('username', request.user.profile.username),
+                'birth': profile_data.get('birth', request.user.profile.birth),
+                'profile_img': user_data.get('profile_img', request.user.profile.profile_img),
+                'introduce': profile_data.get('introduce', request.user.profile.introduce),
+            }
+        }
+        
+        print(serializer_data)
+        
         serializer = self.serializer_class(
             request.user, serializer_data, partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
