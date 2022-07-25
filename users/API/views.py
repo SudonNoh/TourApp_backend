@@ -47,7 +47,10 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
     def patch(self, request, *args, **kwargs):
         user_data = request.data
         profile_data = request.data.get('profile', {})
-
+        # 이 부분은 개선해야 될 여지가 있다.
+        # form-data로 받는 경우 nested data는 어떤 방식으로 POSTMAN에서 보내야하고
+        # DRF에서는 어떤 식으로 받아야하는지, 안드로이드에서는 어떤 식으로 보내고
+        # DRF에서는 어떤 식으로 받는지 등에 대해서다.
         serializer_data = {
             'email': user_data.get('email', request.user.email),
             'mobile': user_data.get('mobile', request.user.mobile),
@@ -55,13 +58,11 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
             'profile': {
                 'username': profile_data.get('username', request.user.profile.username),
                 'birth': profile_data.get('birth', request.user.profile.birth),
-                'profile_img': user_data.get('profile_img', request.user.profile.profile_img),
+                'profile_img': profile_data.get('profile_img', request.user.profile.profile_img),
                 'introduce': profile_data.get('introduce', request.user.profile.introduce),
             }
         }
-        
-        print(serializer_data)
-        
+
         serializer = self.serializer_class(
             request.user, serializer_data, partial=True
         )

@@ -134,10 +134,6 @@ class UserSerializer(serializers.ModelSerializer):
     
     # Profile 관련
     profile = ProfileSerializer()
-    # username = serializers.CharField(source='profile.username')
-    # birth = serializers.DateField(source='profile.birth')
-    # profile_img = serializers.ImageField(source='profile.profile_img', use_url=True)
-    # introduce = serializers.CharField(source='profile.introduce')
     
     class Meta:
         model = User
@@ -145,12 +141,7 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'mobile',
             'last_login',
-            # profile
             'profile'
-            # 'username',
-            # 'birth',
-            # 'profile_img',
-            # 'introduce'
         ]
         
     def update(self, instance, validated_data):
@@ -163,7 +154,6 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
         
         for (key, value) in profile_data.items():
-            print(key, value)
             setattr(instance.profile, key, value)
             
         instance.profile.save()

@@ -153,3 +153,10 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION':True
 }
+
+# MEDIA FILE의 경로 설정 - Upload된 파일들이 저장되는 위치를 지정
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# 절대 경로로 이미지로 접근
+# http://http://127.0.0.1:8000/media/2022/01/13/apeach.jpg
+MEDIA_URL = '/media/'
